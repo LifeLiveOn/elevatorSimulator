@@ -44,10 +44,29 @@ FCT_BGN()
          fct_chk(transition(FLOOR4, REQ_FLOOR_2) == GOINGDNTO2);
          fct_chk(transition(FLOOR4, REQ_FLOOR_3) == GOINGDNTO3);
 
-         /* these events should be ignored */
+         /* Ignore events when in motion */
+         fct_chk(transition(GOINGDNTO2, REQ_DOOR_OPEN) == GOINGDNTO2);  // Ignore door open while moving down
+         fct_chk(transition(GOINGDNTO3, REQ_DOOR_OPEN) == GOINGDNTO3);
+         fct_chk(transition(GOINGUPTO3, REQ_DOOR_OPEN) == GOINGUPTO3);
+         fct_chk(transition(GOINGUPTO4, REQ_DOOR_OPEN) == GOINGUPTO4);
+
+         /* Ignore floor requests while in motion */
+         fct_chk(transition(GOINGDNTO2, CALL_FLOOR_3) == GOINGDNTO2);
+         fct_chk(transition(GOINGDNTO2, CALL_FLOOR_4) == GOINGDNTO2);
+         fct_chk(transition(GOINGDNTO3, CALL_FLOOR_2) == GOINGDNTO3);
+         fct_chk(transition(GOINGUPTO4, CALL_FLOOR_2) == GOINGUPTO4);
+         fct_chk(transition(GOINGUPTO4, CALL_FLOOR_3) == GOINGUPTO4);
+         fct_chk(transition(GOINGUPTO3, CALL_FLOOR_2) == GOINGUPTO3);
+
+         /* Ignore requests for the current floor */
          fct_chk(transition(FLOOR2, CALL_FLOOR_2) == FLOOR2);
          fct_chk(transition(FLOOR3, CALL_FLOOR_3) == FLOOR3);
          fct_chk(transition(FLOOR4, CALL_FLOOR_4) == FLOOR4);
+
+         /* Ignore stop request if elevator is not in motion */
+         fct_chk(transition(FLOOR2, REQ_STOP) == FLOOR2);
+         fct_chk(transition(FLOOR3, REQ_STOP) == FLOOR3);
+         fct_chk(transition(FLOOR4, REQ_STOP) == FLOOR4);
 
          printf("\n");
       }

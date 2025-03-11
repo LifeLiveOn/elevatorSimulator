@@ -211,6 +211,7 @@ void controller_tick()
         {
                 DEBUG_PRINT("Closing the door after delay.\n");
                 elevator_control_cmd(CLOSE_DOOR);  // Close the door
+				door_open = false;
 					
         }
     }
