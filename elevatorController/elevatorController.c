@@ -57,35 +57,66 @@ typedef struct
 	elevatorStateEnum nextState;
 } stateInfo_t;
 
+
+static bool door_open = false;  // false = closed, true = open
+
+
 #define f false
 #define t true
-#define _
-#define __
-#define ___
-#define ____
-#define _____
-#define ______
-#define _______
-#define ________
-#define _________
-#define __________
-#define ___________
-#define ____________
-#define _____________
-#define ______________
 // if f, then the state is not used for anything......
-//                    STATE           EVENT
+
 const stateInfo_t fsm[GOINGDNTO2 + 1][REQ_BELL_RELEASED + 1] = {
-	/*              TIMER_EXPIRED     POWER ON         DOOR_IS_OPEN     DOOR_IS_CLOSED   DOOR_IS_OBSTRUCTED  CAB_POSITION_FLOOR_2   CAB_POSITION_FLOOR_2_5   CAB_POSITION_FLOOR_3   CAB_POSITION_FLOOR_3_5  CAB_POSITION_FLOOR_4   CALL_FLOOR_2      CALL_FLOOR_3     CALL_FLOOR_4      REQ_DOOR_OPEN      REQ_STOP        REQ_FLOOR_2      REQ_FLOOR_3          REQ_FLOOR_4        REQ_BELL_PRESSED   REQ_BELL_RELEASED*/
-	/*OFF       */ {{f, INIT}, ________{t, INIT}, ______{f, OFF}, _______{f, OFF}, _______{f, OFF}, __________{f, OFF}, _____________{f, OFF}, ______________{f, OFF}, ______________{f, OFF}, _____________{f, OFF}, ______________{f, OFF}, ________{f, OFF}, _______{f, OFF}, ________{f, OFF}, ________{f, OFF}, _______{f, OFF}, _______{f, OFF}, ___________{f, OFF}, ________{f, OFF}, __________{f, OFF}},
-	/*INIT      */ {{t, FLOOR2}, ______{f, INIT}, ______{f, FLOOR2}, ____{f, FLOOR2}, ____{f, FLOOR2}, _______{f, FLOOR2}, __________{f, FLOOR2}, ___________{f, FLOOR2}, ___________{f, FLOOR2}, __________{f, FLOOR2}, ___________{f, FLOOR2}, _____{t, GOINGUPTO3}, {t, GOINGUPTO4}, _{f, FLOOR2}, _____{f, FLOOR2}, ____{f, FLOOR2}, ____{t, GOINGUPTO3}, ____{t, GOINGUPTO4}, _{f, FLOOR2}, _______{f, FLOOR2}},
-	/*FLOOR2    */ {{f, INIT}, ________{f, FLOOR2}, ____{f, FLOOR2}, ____{f, FLOOR2}, ____{f, FLOOR2}, _______{f, FLOOR2}, __________{f, FLOOR2}, ___________{f, FLOOR2}, ___________{f, FLOOR2}, __________{f, FLOOR2}, ___________{f, FLOOR2}, _____{t, GOINGUPTO3}, {t, GOINGUPTO4}, _{f, FLOOR2}, _____{f, FLOOR2}, ____{f, FLOOR2}, ____{t, GOINGUPTO3}, ____{t, GOINGUPTO4}, _{f, FLOOR2}, _______{f, FLOOR2}},
-	/*FLOOR3    */ {{f, INIT}, ________{f, FLOOR3}, ____{f, FLOOR3}, ____{f, FLOOR3}, ____{f, FLOOR3}, _______{f, FLOOR3}, __________{f, FLOOR3}, ___________{f, FLOOR3}, ___________{f, FLOOR3}, __________{f, FLOOR3}, ___________{t, GOINGDNTO2}, _{f, FLOOR3}, ____{t, GOINGUPTO4}, _{f, FLOOR3}, _____{f, FLOOR3}, ____{t, GOINGDNTO2}, {f, FLOOR3}, ________{t, GOINGUPTO4}, _{f, FLOOR3}, _______{f, FLOOR3}},
-	/*FLOOR4    */ {{f, INIT}, ________{f, FLOOR4}, ____{f, FLOOR4}, ____{f, FLOOR4}, ____{f, FLOOR4}, _______{f, FLOOR4}, __________{f, FLOOR4}, ___________{f, FLOOR4}, ___________{f, FLOOR4}, __________{f, FLOOR4}, ___________{t, GOINGDNTO2}, _{t, GOINGDNTO3}, {f, FLOOR4}, _____{f, FLOOR4}, _____{f, FLOOR4}, ____{t, GOINGDNTO2}, {t, GOINGDNTO3}, ____{f, FLOOR4}, _____{f, FLOOR4}, _______{f, FLOOR4}},
-	/*GOINGUPTO3*/ {{f, INIT}, ________{f, GOINGDNTO3}, {f, GOINGUPTO3}, {f, GOINGUPTO3}, {f, GOINGUPTO3}, ___{f, GOINGUPTO3}, ______{f, GOINGUPTO3}, _______{t, FLOOR3}, ___________{f, GOINGUPTO3}, ______{f, GOINGUPTO3}, _______{f, GOINGUPTO3}, _{f, GOINGUPTO3}, {f, GOINGUPTO3}, _{f, GOINGUPTO3}, _{f, GOINGUPTO3}, {f, GOINGUPTO3}, {f, GOINGUPTO3}, ____{f, GOINGUPTO3}, _{f, GOINGUPTO3}, ___{f, GOINGUPTO3}},
-	/*GOINGDNTO3*/ {{f, INIT}, ________{f, GOINGUPTO3}, {f, GOINGDNTO3}, {f, GOINGDNTO3}, {f, GOINGDNTO3}, ___{f, GOINGDNTO3}, ______{f, GOINGDNTO3}, _______{t, FLOOR3}, ___________{f, GOINGDNTO3}, ______{f, GOINGDNTO3}, _______{f, GOINGDNTO3}, _{f, GOINGDNTO3}, {f, GOINGDNTO3}, _{f, GOINGDNTO3}, _{f, GOINGDNTO3}, {f, GOINGDNTO3}, {f, GOINGDNTO3}, ____{f, GOINGDNTO3}, _{f, GOINGDNTO3}, ___{f, GOINGDNTO3}},
-	/*GOINGUPTO4*/ {{f, INIT}, ________{f, GOINGUPTO4}, {f, GOINGUPTO4}, {f, GOINGUPTO4}, {f, GOINGUPTO4}, ___{f, GOINGUPTO4}, ______{f, GOINGUPTO4}, _______{f, GOINGUPTO4}, _______{f, GOINGUPTO4}, ______{t, FLOOR4}, ___________{f, GOINGUPTO4}, _{f, GOINGUPTO4}, {f, GOINGUPTO4}, _{f, GOINGUPTO4}, _{f, GOINGUPTO4}, {f, GOINGUPTO4}, {f, GOINGUPTO4}, ____{f, GOINGUPTO4}, _{f, GOINGUPTO4}, ___{f, GOINGUPTO4}},
-	/*GOINGDNTO2*/ {{f, INIT}, ________{f, GOINGDNTO2}, {f, GOINGDNTO2}, {f, GOINGDNTO2}, {f, GOINGDNTO2}, ___{t, FLOOR2}, __________{f, GOINGDNTO2}, _______{f, GOINGDNTO2}, _______{f, GOINGDNTO2}, ______{f, GOINGDNTO2}, _______{f, GOINGDNTO2}, _{f, GOINGDNTO2}, {f, GOINGDNTO2}, _{f, GOINGDNTO2}, _{f, GOINGDNTO2}, {f, GOINGDNTO2}, {f, GOINGDNTO2}, ____{f, GOINGDNTO2}, _{f, GOINGDNTO2}, ___{f, GOINGDNTO2}}};
+    /*            TIMER_EXPIRED   POWER_ON       DOOR_OPEN      DOOR_CLOSED    DOOR_OBSTRUCTED 
+                  CAB_POS_2       CAB_POS_2_5    CAB_POS_3      CAB_POS_3_5    CAB_POS_4  
+                  CALL_2          CALL_3         CALL_4         REQ_DOOR_OPEN  REQ_STOP  
+                  REQ_FLOOR_2     REQ_FLOOR_3    REQ_FLOOR_4    REQ_BELL_PRESS REQ_BELL_RELEASE */
+
+    /* OFF       */ {{f, INIT},    {t, INIT},    {f, OFF},      {f, OFF},      {f, OFF},  
+                     {f, OFF},     {f, OFF},     {f, OFF},      {f, OFF},      {f, OFF},  
+                     {f, OFF},     {f, OFF},     {f, OFF},      {f, OFF},      {f, OFF},  
+                     {f, OFF},     {f, OFF},     {f, OFF},      {f, OFF},      {f, OFF}},
+
+    /* INIT      */ {{t, FLOOR2},  {f, INIT},    {t, FLOOR2},   {t, FLOOR2},   {f, FLOOR2},  
+                     {f, FLOOR2},  {f, FLOOR2},  {f, FLOOR2},   {f, FLOOR2},   {f, FLOOR2},  
+                     {f, FLOOR2},  {t, GOINGUPTO3}, {t, GOINGUPTO4}, {t, FLOOR2}, {f, FLOOR2},  
+                     {f, FLOOR2},  {t, GOINGUPTO3}, {t, GOINGUPTO4}, {f, FLOOR2}, {f, FLOOR2}},
+
+    /* FLOOR2    */ {{t, FLOOR2},    {f, FLOOR2},  {t, FLOOR2},   {t, FLOOR2},   {t, FLOOR2},  
+                     {t, FLOOR2},  {f, FLOOR2},  {f, FLOOR2},   {f, FLOOR2},   {f, FLOOR2},  
+                     {t, FLOOR2},  {t, GOINGUPTO3}, {t, GOINGUPTO4}, {t, FLOOR2}, {f, FLOOR2},  
+                     {t, FLOOR2},  {t, GOINGUPTO3}, {t, GOINGUPTO4}, {f, FLOOR2}, {f, FLOOR2}},
+
+    /* FLOOR3    */ {{t, FLOOR3},    {f, FLOOR3},  {t, FLOOR3},   {t, FLOOR3},   {t, FLOOR3},  
+                     {f, FLOOR3},  {f, FLOOR3},  {t, FLOOR3},   {f, FLOOR3},   {f, FLOOR3},  
+                     {t, GOINGDNTO2}, {t, FLOOR3}, {t, GOINGUPTO4}, {t, FLOOR3}, {f, FLOOR3},  
+                     {t, GOINGDNTO2}, {t, FLOOR3}, {t, GOINGUPTO4}, {f, FLOOR3}, {f, FLOOR3}},
+
+    /* FLOOR4    */ {{t, FLOOR4},    {f, FLOOR4},  {t, FLOOR4},   {t, FLOOR4},   {t, FLOOR4},  
+                     {f, FLOOR4},  {f, FLOOR4},  {f, FLOOR4},   {f, FLOOR4},   {t, FLOOR4},  
+                     {t, GOINGDNTO2}, {t, GOINGDNTO3}, {t, FLOOR4}, {t, FLOOR4}, {f, FLOOR4},  
+                     {t, GOINGDNTO2}, {t, GOINGDNTO3}, {t, FLOOR4}, {f, FLOOR4}, {f, FLOOR4}},
+
+    /* GOINGUPTO3 */ {{f, INIT},   {f, GOINGDNTO3}, {f, GOINGUPTO3}, {f, GOINGUPTO3}, {f, GOINGUPTO3},  
+                      {f, GOINGUPTO3}, {f, GOINGUPTO3}, {t, FLOOR3}, {f, GOINGUPTO3}, {f, GOINGUPTO3},  
+                      {f, GOINGUPTO3}, {f, GOINGUPTO3}, {f, GOINGUPTO3}, {f, GOINGUPTO3}, {f, GOINGUPTO3},  
+                      {f, GOINGUPTO3}, {f, GOINGUPTO3}, {f, GOINGUPTO3}, {f, GOINGUPTO3}, {f, GOINGUPTO3}},
+
+    /* GOINGDNTO3 */ {{f, INIT},   {f, GOINGUPTO3}, {f, GOINGDNTO3}, {f, GOINGDNTO3}, {f, GOINGDNTO3},  
+                      {f, GOINGDNTO3}, {f, GOINGDNTO3}, {t, FLOOR3}, {f, GOINGDNTO3}, {f, GOINGDNTO3},  
+                      {f, GOINGDNTO3}, {f, GOINGDNTO3}, {f, GOINGDNTO3}, {f, GOINGDNTO3}, {f, GOINGDNTO3},  
+                      {f, GOINGDNTO3}, {f, GOINGDNTO3}, {f, GOINGDNTO3}, {f, GOINGDNTO3}, {f, GOINGDNTO3}},
+
+    /* GOINGUPTO4 */ {{f, INIT},   {f, GOINGUPTO4}, {f, GOINGUPTO4}, {f, GOINGUPTO4}, {f, GOINGUPTO4},  
+                      {f, GOINGUPTO4}, {f, GOINGUPTO4}, {f, GOINGUPTO4}, {f, GOINGUPTO4}, {t, FLOOR4},  
+                      {f, GOINGUPTO4}, {f, GOINGUPTO4}, {f, GOINGUPTO4}, {f, GOINGUPTO4}, {f, GOINGUPTO4},  
+                      {f, GOINGUPTO4}, {f, GOINGUPTO4}, {f, GOINGUPTO4}, {f, GOINGUPTO4}, {f, GOINGUPTO4}},
+
+    /* GOINGDNTO2 */ {{f, INIT},   {f, GOINGDNTO2}, {f, GOINGDNTO2}, {f, GOINGDNTO2}, {f, GOINGDNTO2},  
+                      {t, FLOOR2}, {f, GOINGDNTO2}, {f, GOINGDNTO2}, {f, GOINGDNTO2}, {f, GOINGDNTO2},  
+                      {f, GOINGDNTO2}, {f, GOINGDNTO2}, {f, GOINGDNTO2}, {f, GOINGDNTO2}, {f, GOINGDNTO2},  
+                      {f, GOINGDNTO2}, {f, GOINGDNTO2}, {f, GOINGDNTO2}, {f, GOINGDNTO2}, {f, GOINGDNTO2}}
+};
+
 
 // after formatting the table, perhaps reading in a file would be easier.
 // but, you can't beat looking at code compared to debugging it.
@@ -126,26 +157,63 @@ elevatorStateEnum transition(elevatorStateEnum state, eventEnum event)
 	return nextState;
 }
 
+bool door_is_open()
+{
+    return door_open;  // Return the global variable
+}
+
+static eventEnum last_event;  // Store the last received event
+
+
 void event_to_controller(eventEnum e)
 {
-	INFO_PRINT("event to controller %s\n", eventEnumName(e));
-	// all events are processed in this function
-	currentState = transition(currentState, e);
+    INFO_PRINT("event to controller %s\n", eventEnumName(e));
+
+    // Store the last event received
+    last_event = e;
+    DEBUG_PRINT("Last event updated: %d\n", last_event);
+
+    // Update door state
+    if (e == DOOR_IS_OPEN)
+    {
+        door_open = true;
+    }
+    else if (e == DOOR_IS_CLOSED)
+    {
+        door_open = false;
+    }
+
+    // Check if the elevator is moving
+    bool is_moving = (currentState == GOINGUPTO3 || currentState == GOINGUPTO4 ||
+                      currentState == GOINGDNTO2 || currentState == GOINGDNTO3);
+
+    // Ignore movement requests if the door is open or the elevator is moving
+    if ((door_open || is_moving) && 
+        (e == REQ_FLOOR_3 || e == REQ_FLOOR_4 || e == REQ_FLOOR_2 || 
+         e == CALL_FLOOR_3 || e == CALL_FLOOR_4 || e == CALL_FLOOR_2))
+    {
+        DEBUG_PRINT("Ignoring request: Door is open OR Elevator is already moving!\n");
+        return;  // Do not process this event
+    }
+
+    currentState = transition(currentState, e);
 }
+
+
 
 // These functions are mandatory.  They must be implement with the same name and arguments
 void controller_tick()
 {
-	// DEBUG_PRINT("controller tick\n");
-	//  this is where timers are handled
-	if (timer)
-	{
-		timer--;
-		if (!timer)
-		{
-			event_to_controller(TIMER_EXPIRED);
-		}
-	}
+    if (timer)
+    {
+        timer--;
+        if (!timer)  // When timer expires
+        {
+                DEBUG_PRINT("Closing the door after delay.\n");
+                elevator_control_cmd(CLOSE_DOOR);  // Close the door
+					
+        }
+    }
 }
 
 void controller_init()
@@ -161,39 +229,75 @@ void controller_init()
 void init_entry()
 {
 	DEBUG_PRINT("\n");
-	// as part of the requirements, the door needs to be opened
-	// and all indicators turned on.
+	// as part of the requirements, the door needs to be opened and all indicators turned on.
 	elevator_control_cmd(OPEN_DOOR);
 	elevator_indicators(-1);
-	timer = 20;
+	timer = 5;
 }
 
 void off_entry()
 {
-	DEBUG_PRINT("\n");
-	int eCmd = ALL_OFF;
-	elevator_control_cmd(eCmd);
+	DEBUG_PRINT("Elevator turned OFF.\n");
+    
+    elevator_control_cmd(ALL_OFF);
+    timer = 0; 
+
 }
 
 void floor2_state_entry()
 {
-	DEBUG_PRINT("\n");
-	elevator_control_cmd(ALL_OFF);
-	elevator_indicators(CAB_POS_2 | POS_FLOOR_2);
+    DEBUG_PRINT("\n");
+	if (!door_is_open() && (last_event == CALL_FLOOR_2 || last_event == REQ_FLOOR_2 || last_event == CAB_POSITION_FLOOR_2)){
+		DEBUG_PRINT("Request FLOOR 2");
+		elevator_control_cmd(OPEN_DOOR);
+		door_open = true;
+		timer = 7;
+		elevator_indicators(CALL_ACCEPTED_FLOOR_2 | REQ_FLOOR_ACCEPTED_2 | CAB_POS_2 | POS_FLOOR_2);
+	}
+    else  
+    {
+		INFO_PRINT("No requests.\n");
+        elevator_control_cmd(ALL_OFF);
+        elevator_indicators(CAB_POS_2 | POS_FLOOR_2);
+    }
 }
+
+
 
 void floor3_state_entry()
 {
 	DEBUG_PRINT("\n");
-	elevator_control_cmd(ALL_OFF);
-	elevator_indicators(CAB_POS_3 | POS_FLOOR_3);
+	if (!door_is_open() && (last_event == CALL_FLOOR_3 || last_event == REQ_FLOOR_3 || last_event == CAB_POSITION_FLOOR_3)){
+		DEBUG_PRINT("Request FLOOR 3");
+		elevator_control_cmd(OPEN_DOOR);
+		door_open = true;
+		timer = 7;
+		elevator_indicators(CALL_ACCEPTED_FLOOR_3 | REQ_FLOOR_ACCEPTED_3|CAB_POS_3 | POS_FLOOR_3);
+	}
+    else  
+    {
+		INFO_PRINT("No requests.\n");
+        elevator_control_cmd(ALL_OFF);
+        elevator_indicators(CAB_POS_3 | POS_FLOOR_3);
+    }
 }
 
 void floor4_state_entry()
 {
 	DEBUG_PRINT("\n");
-	elevator_control_cmd(ALL_OFF);
-	elevator_indicators(CAB_POS_4 | POS_FLOOR_4);
+	if (!door_is_open() && (last_event == CALL_FLOOR_4 || last_event == REQ_FLOOR_4 || last_event == CAB_POSITION_FLOOR_4 )){
+		DEBUG_PRINT("Request FLOOR 4");
+		elevator_control_cmd(OPEN_DOOR);
+		door_open = true;
+		timer = 7;
+		elevator_indicators(CALL_ACCEPTED_FLOOR_4 | REQ_FLOOR_ACCEPTED_4|CAB_POS_4 | POS_FLOOR_4);
+	}
+    else  
+    {
+		INFO_PRINT("No requests.\n");
+        elevator_control_cmd(ALL_OFF);
+        elevator_indicators(CAB_POS_4 | POS_FLOOR_4);
+    }
 }
 
 void goingdnto2_state_entry()

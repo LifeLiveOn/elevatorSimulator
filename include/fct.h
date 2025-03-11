@@ -41,8 +41,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 File: fct.h
 */
 
+
+
 #if !defined(FCT_INCLUDED__IMB)
 #define FCT_INCLUDED__IMB
+
 
 /* Configuration Values. You can over-ride these values in your own
 header, then include this header. For example, in your file, myfct.h,
@@ -77,6 +80,7 @@ with a standard logger. */
 #include <float.h>
 #include <math.h>
 #include <ctype.h>
+
 
 #define FCT_MAX_NAME           256
 #define FCT_MAX_LOG_LINE       256
@@ -197,7 +201,7 @@ static int fct_saved_stderr;
 
 /* Platform independent pipe functions. TODO: Look to figure this out in a way
 that follows the ISO C++ conformant naming convention. */
-#if defined(WIN32)
+#if defined(_WIN32) || defined(WIN32)  
 #    include <io.h>
 #    include <fcntl.h>
 #    define _fct_pipe(_PFDS_) \
@@ -206,17 +210,18 @@ that follows the ISO C++ conformant naming convention. */
 #    define _fct_dup2 _dup2
 #    define _fct_close _close
 #    define _fct_read  _read
-/* Until I can figure a better way to do this, rely on magic numbers. */
+/* Define standard output/error file descriptors for Windows */
 #    define STDOUT_FILENO 1
 #    define STDERR_FILENO 2
-#else
+#else  // POSIX (Linux/macOS)
 #    include <unistd.h>
 #    define _fct_pipe  pipe
 #    define _fct_dup   dup
 #    define _fct_dup2  dup2
 #    define _fct_close close
 #    define _fct_read  read
-#endif /* WIN32 */
+#endif /* _WIN32 || WIN32 */
+
 
 
 
@@ -3051,7 +3056,7 @@ fct_junit_logger__on_test_suite_end(
     FCT_SWITCH_STDERR_TO_STDERR();
 
     /* opening testsuite tag */
-    printf("\t<testsuite errors=\"%lu\" failures=\"0\" tests=\"%lu\" "
+    printf("\t<testsuite errors=\"%zu\" failures=\"0\" tests=\"%zu\" "
            "name=\"%s\" time=\"%.4f\">\n",
            (unsigned long)   fct_ts__tst_cnt(ts)
            - fct_ts__tst_cnt_passed(ts),
