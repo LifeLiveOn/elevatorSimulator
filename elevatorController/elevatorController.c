@@ -57,10 +57,6 @@ typedef struct
 	elevatorStateEnum nextState;
 } stateInfo_t;
 
-
-static bool door_open = false;  // false = closed, true = open
-
-
 #define f false
 #define t true
 // if f, then the state is not used for anything......
@@ -78,8 +74,8 @@ const stateInfo_t fsm[GOINGDNTO2 + 1][REQ_BELL_RELEASED + 1] = {
 
     /* INIT      */ {{t, FLOOR2},  {f, INIT},    {t, FLOOR2},   {t, FLOOR2},   {f, FLOOR2},  
                      {f, FLOOR2},  {f, FLOOR2},  {f, FLOOR2},   {f, FLOOR2},   {f, FLOOR2},  
-                     {f, FLOOR2},  {t, GOINGUPTO3}, {t, GOINGUPTO4}, {t, FLOOR2}, {f, FLOOR2},  
-                     {f, FLOOR2},  {t, GOINGUPTO3}, {t, GOINGUPTO4}, {f, FLOOR2}, {f, FLOOR2}},
+                     {f, FLOOR2},  {f, GOINGUPTO3}, {f, GOINGUPTO4}, {t, FLOOR2}, {f, FLOOR2},  
+                     {f, FLOOR2},  {f, GOINGUPTO3}, {f, GOINGUPTO4}, {f, FLOOR2}, {f, FLOOR2}},
 
     /* FLOOR2    */ {{t, FLOOR2},    {f, FLOOR2},  {t, FLOOR2},   {t, FLOOR2},   {t, FLOOR2},  
                      {t, FLOOR2},  {f, FLOOR2},  {f, FLOOR2},   {f, FLOOR2},   {f, FLOOR2},  
@@ -157,6 +153,9 @@ elevatorStateEnum transition(elevatorStateEnum state, eventEnum event)
 	return nextState;
 }
 
+static bool door_open = false;  
+static bool door_closing = false;  
+
 bool door_is_open()
 {
     return door_open;  // Return the global variable
@@ -167,38 +166,47 @@ static eventEnum last_event;  // Store the last received event
 
 void event_to_controller(eventEnum e)
 {
-    INFO_PRINT("event to controller %s\n", eventEnumName(e));
+    // INFO_PRINT("Current Event: %s\n\n", eventEnumName(e));
 
-    // Store the last event received
+    // Store the last event 
     last_event = e;
-    DEBUG_PRINT("Last event updated: %d\n", last_event);
 
     // Update door state
     if (e == DOOR_IS_OPEN)
     {
         door_open = true;
+        door_closing = false; 
     }
     else if (e == DOOR_IS_CLOSED)
     {
         door_open = false;
+        door_closing = false; 
+    }
+
+    bool is_movement_request = (e == REQ_FLOOR_3 || e == REQ_FLOOR_4 || e == REQ_FLOOR_2 || 
+                                e == CALL_FLOOR_3 || e == CALL_FLOOR_4 || e == CALL_FLOOR_2 || REQ_DOOR_OPEN);
+
+    // NO request should be processed while door is closing or opening
+    if (door_closing && is_movement_request)
+    {
+        // DEBUG_PRINT("Ignoring request door is closing!\n");
+        return; 
     }
 
     // Check if the elevator is moving
     bool is_moving = (currentState == GOINGUPTO3 || currentState == GOINGUPTO4 ||
                       currentState == GOINGDNTO2 || currentState == GOINGDNTO3);
 
-    // Ignore movement requests if the door is open or the elevator is moving
-    if ((door_open || is_moving) && 
-        (e == REQ_FLOOR_3 || e == REQ_FLOOR_4 || e == REQ_FLOOR_2 || 
-         e == CALL_FLOOR_3 || e == CALL_FLOOR_4 || e == CALL_FLOOR_2))
+    // Ignore requests if the door is open or the elevator is moving
+    if ((door_open || is_moving) && is_movement_request)
     {
-        DEBUG_PRINT("Ignoring request: Door is open OR Elevator is already moving!\n");
-        return;  // Do not process this event
+        // DEBUG_PRINT("Ignoring request while door is opening or moving!\n");
+        return; 
     }
 
+    // go to new state otherwise
     currentState = transition(currentState, e);
 }
-
 
 
 // These functions are mandatory.  They must be implement with the same name and arguments
@@ -209,11 +217,15 @@ void controller_tick()
         timer--;
         if (!timer)  // When timer expires
         {
-                DEBUG_PRINT("Closing the door after delay.\n");
+                // DEBUG_PRINT("Closing the door after delay.\n");
                 elevator_control_cmd(CLOSE_DOOR);  // Close the door
 				door_open = false;
-					
+				door_closing = true;
         }
+		else if(door_closing){
+			// INFO_PRINT("DOOR IS CLOSED!\n");
+			door_closing = false;
+		}
     }
 }
 
@@ -238,64 +250,88 @@ void init_entry()
 
 void off_entry()
 {
-	DEBUG_PRINT("Elevator turned OFF.\n");
+	// DEBUG_PRINT("Elevator turned OFF.\n");
     
     elevator_control_cmd(ALL_OFF);
     timer = 0; 
 
 }
 
+// handle all possible event at floor 2
 void floor2_state_entry()
 {
     DEBUG_PRINT("\n");
-	if (!door_is_open() && (last_event == CALL_FLOOR_2 || last_event == REQ_FLOOR_2 || last_event == CAB_POSITION_FLOOR_2)){
-		DEBUG_PRINT("Request FLOOR 2");
+	if (!door_is_open() && (last_event == CALL_FLOOR_2 || last_event == REQ_FLOOR_2 || last_event == CAB_POSITION_FLOOR_2 || last_event == REQ_DOOR_OPEN)){
+		// DEBUG_PRINT("Request FLOOR 2\n");
 		elevator_control_cmd(OPEN_DOOR);
 		door_open = true;
+		door_closing = false; 
 		timer = 7;
-		elevator_indicators(CALL_ACCEPTED_FLOOR_2 | REQ_FLOOR_ACCEPTED_2 | CAB_POS_2 | POS_FLOOR_2);
+		if(last_event==REQ_DOOR_OPEN){
+			// INFO_PRINT("Request open door in cabin\n");
+
+		}
+		else{
+			elevator_indicators(CALL_ACCEPTED_FLOOR_2 | REQ_FLOOR_ACCEPTED_2 | CAB_POS_2 | POS_FLOOR_2 | UPPTAGEN_FLOOR_3 | UPPTAGEN_FLOOR_4);
+		}
+		
 	}
     else  
     {
-		INFO_PRINT("No requests.\n");
+		// INFO_PRINT("No other request! at idle.\n");
         elevator_control_cmd(ALL_OFF);
         elevator_indicators(CAB_POS_2 | POS_FLOOR_2);
     }
 }
 
 
-
+// handle all possible event at floor 3
 void floor3_state_entry()
 {
 	DEBUG_PRINT("\n");
-	if (!door_is_open() && (last_event == CALL_FLOOR_3 || last_event == REQ_FLOOR_3 || last_event == CAB_POSITION_FLOOR_3)){
-		DEBUG_PRINT("Request FLOOR 3");
+	if (!door_is_open() && (last_event == CALL_FLOOR_3 || last_event == REQ_FLOOR_3 || last_event == CAB_POSITION_FLOOR_3 || last_event == REQ_DOOR_OPEN)){
+		// DEBUG_PRINT("Request FLOOR 3");
 		elevator_control_cmd(OPEN_DOOR);
 		door_open = true;
+		door_closing = false; 
 		timer = 7;
-		elevator_indicators(CALL_ACCEPTED_FLOOR_3 | REQ_FLOOR_ACCEPTED_3|CAB_POS_3 | POS_FLOOR_3);
+		if(last_event==REQ_DOOR_OPEN){
+			// INFO_PRINT("Request open door in cabin\n");
+
+		}
+		else{
+			elevator_indicators(CALL_ACCEPTED_FLOOR_3 | REQ_FLOOR_ACCEPTED_3|CAB_POS_3 | POS_FLOOR_3 | UPPTAGEN_FLOOR_2 | UPPTAGEN_FLOOR_4);
+		}
+		
 	}
     else  
     {
-		INFO_PRINT("No requests.\n");
+		// INFO_PRINT("No other request! at idle.\n");
         elevator_control_cmd(ALL_OFF);
         elevator_indicators(CAB_POS_3 | POS_FLOOR_3);
     }
 }
 
+// handle all possible event at floor 4
 void floor4_state_entry()
 {
 	DEBUG_PRINT("\n");
-	if (!door_is_open() && (last_event == CALL_FLOOR_4 || last_event == REQ_FLOOR_4 || last_event == CAB_POSITION_FLOOR_4 )){
-		DEBUG_PRINT("Request FLOOR 4");
+	if (!door_is_open() && (last_event == CALL_FLOOR_4 || last_event == REQ_FLOOR_4 || last_event == CAB_POSITION_FLOOR_4 || last_event == REQ_DOOR_OPEN)){
+		// DEBUG_PRINT("Request FLOOR 4");
 		elevator_control_cmd(OPEN_DOOR);
 		door_open = true;
+		door_closing = false; 
 		timer = 7;
-		elevator_indicators(CALL_ACCEPTED_FLOOR_4 | REQ_FLOOR_ACCEPTED_4|CAB_POS_4 | POS_FLOOR_4);
+		if(last_event==REQ_DOOR_OPEN){
+			// INFO_PRINT("Request open door in cabin\n");
+		}
+		else{
+			elevator_indicators(CALL_ACCEPTED_FLOOR_4 | REQ_FLOOR_ACCEPTED_4 | CAB_POS_4 | POS_FLOOR_4 | UPPTAGEN_FLOOR_3 | UPPTAGEN_FLOOR_2);
+		}
 	}
     else  
     {
-		INFO_PRINT("No requests.\n");
+		// INFO_PRINT("No other request! at idle.\n");
         elevator_control_cmd(ALL_OFF);
         elevator_indicators(CAB_POS_4 | POS_FLOOR_4);
     }

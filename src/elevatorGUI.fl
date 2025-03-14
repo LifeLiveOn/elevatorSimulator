@@ -178,6 +178,9 @@ event_to_controller(event);}
         }
         Fl_Button {} {
           label DOOR
+          callback {eventEnum event;
+          event=REQ_DOOR_OPEN;
+          event_to_controller(event);}
           xywh {975 295 70 20}
         }
         Fl_Light_Button {} {
