@@ -21,13 +21,18 @@ extern "C"
     {
         OFF,
         INIT,
+        IDLE_AT_FLOOR2, 
         FLOOR2,
+        SENSOR_2_5,
+        IDLE_AT_FLOOR3,  
         FLOOR3,
+        SENSOR_3_5,     
+        IDLE_AT_FLOOR4,  
         FLOOR4,
         GOINGUPTO3,
         GOINGDNTO3,
         GOINGUPTO4,
-        GOINGDNTO2
+        GOINGDNTO2,
     } elevatorStateEnum;
 
     void controller_tick();
